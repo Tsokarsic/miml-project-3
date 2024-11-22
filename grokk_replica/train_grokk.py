@@ -6,8 +6,8 @@ from datasets import AbstractDataset
 from utils import combine_logs
 from torch.utils.data import DataLoader
 import torch.nn as nn
+#import wandb
 from tqdm.auto import tqdm
-import wandb
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from load_objs import load_item
@@ -36,9 +36,9 @@ class GroupDataset(IterableDataset):
 def train(config):
     print('using config:', config)
     train_cfg = config['train']
-    wandb_cfg = config['wandb']
-    if wandb_cfg['use_wandb']:
-        wandb.init(project=wandb_cfg['wandb_project'], config=config)
+    # wandb_cfg = config['wandb']
+    # if wandb_cfg['use_wandb']:
+    #     wandb.init(project=wandb_cfg['wandb_project'], config=config)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset = load_item(config['dataset'])
@@ -71,8 +71,8 @@ def train(config):
             out_log = {'val': combine_logs(all_val_logs), 'train': combine_logs([logs]), 'step': (step+1), 
                        'lr': float(lr_schedule.get_last_lr()[0])}
             print(out_log)
-            if wandb_cfg['use_wandb']:
-                wandb.log(out_log)
+            # if wandb_cfg['use_wandb']:
+            #     wandb.log(out_log)
             model.train()
         step += 1
         if train_cfg['max_steps'] is not None and step >= train_cfg['max_steps']:

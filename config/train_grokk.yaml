@@ -1,11 +1,11 @@
 defaults:
-  - dataset: mod_subtract_dataset
+  - dataset: mod_sum_dataset
   - model: grokk_model
   - _self_
 
 dataset:
   frac_train: 0.4
-  p: 96
+  p: 97
 
 model:
   transformer_config:
@@ -20,7 +20,7 @@ train:
   warmup_steps: 10
   eval_every: 10
   eval_batches: 8
-  max_steps: 1e6
+  max_steps: 1e3
 
 wandb:
   use_wandb: true
