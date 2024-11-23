@@ -5,6 +5,35 @@ import torch.nn.functional as F
 import torch
 import math
 
+class mlpblock(nn.Module):
+    def __init__(self,input_dim,output_dim,add_bias,norm_method):
+        super(mlpblock, self).__init__()
+        self.ff=nn.Linear(input_dim,output_dim,bias=add_bias)
+        self.batchnorm=nn.BatchNorm1d(output_dim)
+        self.layernorm=nn.LayerNorm(output_dim)
+        self.norm=norm_method
+    def forward(self,x):
+        x=self.ff(x)
+        if self.norm=='batchnorm':
+            x=self.batchnorm(x)
+        if self.norm=='layernorm':
+            x=self.layernorm(x)
+        x=F.relu(x)
+        return x
+
+class mlpnetwork(nn.Module):
+    def __init__(self,vocab_size,hidden_dim,num_layers,intermediate_dim,output_size,add_bias,norm_method):
+        super(mlpnetwork, self).__init__()
+        self.embeddings=nn.Embedding(vocab_size,hidden_dim)
+        self.mlpblock1=mlpblock(4*hidden_dim,intermediate_dim,add_bias,norm_method)
+        self.mlpblock2=nn.Sequential(*[mlpblock(intermediate_dim,intermediate_dim,add_bias,norm_method) for _ in range(num_layers-1)])
+        self.output_layer=nn.Linear(intermediate_dim,output_size,bias=add_bias)
+    def forward(self,x):
+        x=self.embeddings(x)
+        x=x.reshape(x.shape[0],-1)
+        x=self.output_layer(self.mlpblock2(self.mlpblock1(x)))
+        return x
+
 class lstmnetwork(nn.Module):
     def __init__(self, vocab_size, hidden_dim, intermediate_dim, num_layers, dropout, bidirectional,output_size):
         super(lstmnetwork, self).__init__()

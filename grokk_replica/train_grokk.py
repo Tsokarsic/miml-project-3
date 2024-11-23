@@ -45,7 +45,7 @@ def train(config):
     train_data = GroupDataset(dataset, 'train')
     val_data = GroupDataset(dataset, 'val')
     model = load_item(config['model'], dataset.n_vocab, dataset.n_out, device)
-    print(model)
+    # print(model)
     model.train()
     train_dataloader = DataLoader(train_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     val_dataloader = DataLoader(val_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
@@ -86,6 +86,6 @@ def main(cfg : DictConfig):
     train(cfg)
 
 if __name__ == "__main__":
-    main()
+       main()
 
 print(torch.cuda.is_available())  # 如果返回True，则CUDA可用
