@@ -4,6 +4,9 @@ from itertools import permutations
 from typing import Set
 
 class AbstractDataset(abc.ABC):
+    """
+
+    """
     def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
         self.frac_train = frac_train
         self.group_elements1 = group_elements1
@@ -47,6 +50,17 @@ class AbstractDataset(abc.ABC):
         return self.fetch_example(idx)
 
 class ModSumDataset(AbstractDataset):
+    """
+    Summary of ModSumDataset
+    -----------------------
+
+    This class represents a modified sum dataset, which is a subclass of AbstractDataset. It is designed to work with
+    elements from a finite field of order `p`, where operations are performed modulo `p`. The primary purpose of this
+    dataset is to facilitate the creation of training and testing sets for machine learning models or other computational
+    tasks that involve modular arithmetic. The class provides a method to fetch outputs resulting from the modular sum of
+    two elements.
+
+    Detailed description of ModSum"""
     def __init__(self, p, frac_train):
         super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
         self.p = p
@@ -55,6 +69,9 @@ class ModSumDataset(AbstractDataset):
         return (a + b) % self.p
 
 class ModSubtractDataset(AbstractDataset):
+    """
+
+    """
     def __init__(self, p, frac_train):
         super(ModSubtractDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
         self.p = p
@@ -63,6 +80,9 @@ class ModSubtractDataset(AbstractDataset):
         return (a - b) % self.p
 
 class ModDivisonDataset(AbstractDataset):
+    """
+
+    """
     def __init__(self, p, frac_train):
         super(ModDivisonDataset, self).__init__(set(range(p)), set(range(1, p)), frac_train)
         self.p = p
@@ -71,6 +91,9 @@ class ModDivisonDataset(AbstractDataset):
         return (a * pow(b, self.p-2, self.p)) % self.p
 
 class PermutationGroup(AbstractDataset):
+    """
+
+    """
     def __init__(self, k, frac_train):
         perms = set(map(tuple, permutations(list(range(k)))))
         super(PermutationGroup, self).__init__(perms, perms, frac_train)

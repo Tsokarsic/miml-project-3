@@ -3,24 +3,123 @@ defaults:
   - model: grokk_model
   - _self_
 
+optimizer: AdamW
+#直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致
+#可在所使用模型对应优化器的optimizer_status中设置相关参数
+
 dataset:
   frac_train: 0.4
   p: 97
+  #注；更改p时，同时更改grokk_model.yaml中hidden_dim的数值为p+2.
+  num_p: 2
+  #注；在更改num_p时，请同时更改grokk_model.yaml中mlp_config中的num_p,保持两者相同
+train_transformer:
+    num_workers: 0
+    bsize: 512
+    eval_every: 100
+    eval_batches: 8
+    max_steps: 1e5
 
-model:
-  transformer_config:
-    pre_norm: true
+    lr_decay:
+      iter_number: 100
+      #后续模型的参数注释相同
+      #每这些步后更新一次，默认与eval_every相同
+      method: linear
+      #optional：linear(1/t衰减），quadratic（1/sqrt（t）衰减），exp（e^-t)衰减，这里t表示到第t个更新状态
+      rate: 0.1
+      #衰减参数中的beta
+      warmup_steps: 10
 
-train:
+    AdamW_status:
+      lr: 1e-3
+      weight_decay: 0.0
+      betas: [0.9, 0.98]
+
+    SGD_status:
+      lr: 1e-2
+      weight_decay: 1.0
+      momentum: 0.1
+      nesterov: True
+
+    RMSProp_status:
+      lr: 0.01
+      alpha: 0.99
+      eps: 1e-08
+      weight_decay: 0
+      momentum: 0
+      centered: False
+
+
+
+
+
+
+train_mlp:
   num_workers: 0
   bsize: 512
-  lr: 1e-3
-  weight_decay: 0.0
-  betas: [0.9, 0.98]
-  warmup_steps: 10
   eval_every: 100
   eval_batches: 8
   max_steps: 1e5
+
+  lr_decay:
+    iter_number: 100
+    method: linear
+    rate: 0.1
+    warmup_steps: 10
+
+  AdamW_status:
+    lr: 1e-3
+    weight_decay: 0.0
+    betas: [ 0.9, 0.98 ]
+
+  SGD_status:
+    lr: 1e-2
+    weight_decay: 1.0
+    momentum: 0.1
+    nesterov: True
+
+  RMSProp_status:
+    lr: 0.01
+    alpha: 0.99
+    eps: 1e-08
+    weight_decay: 0
+    momentum: 0
+    centered: False
+
+
+
+train_lstm:
+  num_workers: 0
+  bsize: 512
+  eval_every: 100
+  eval_batches: 8
+  max_steps: 1e5
+
+  lr_decay:
+    iter_number: 100
+    method: linear
+    rate: 0.1
+    warmup_steps: 10
+
+  AdamW_status:
+    lr: 1e-3
+    weight_decay: 0.0
+    betas: [ 0.9, 0.98 ]
+
+  SGD_status:
+    lr: 1e-2
+    weight_decay: 1.0
+    momentum: 0.1
+    nesterov: True
+
+  RMSProp_status:
+    lr: 0.01
+    alpha: 0.99
+    eps: 1e-08
+    weight_decay: 0
+    momentum: 0
+    centered: False
+
 
 wandb:
   use_wandb: true

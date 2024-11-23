@@ -33,26 +33,44 @@ class GroupDataset(IterableDataset):
         x, y, _ = self.fetch_f()
         return torch.tensor(x), torch.tensor(y)
 
+def lr_decay(iter_number,method,rate,warmup_steps):
+    def f(s):
+        if s<warmup_steps :
+            return s/warmup_steps
+        else:
+            s=s-warmup_steps
+            iterstep=int(s/iter_number)
+            if method=='linear':
+                return 1/(iterstep*rate+1)
+            if method=='quadratic':
+                return 1/(iterstep**0.5*rate+1)
+            if method=='exp':
+                return torch.exp(-rate*iterstep)
+            else:
+                return 1
+    return f
+
 def train(config):
     print('using config:', config)
-    train_cfg = config['train']
+    mode = config['model']['mode']
+    optimizer=config['optimizer']
+    train_cfg = config['train_'+mode]
     # wandb_cfg = config['wandb']
     # if wandb_cfg['use_wandb']:
     #     wandb.init(project=wandb_cfg['wandb_project'], config=config)
-    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset = load_item(config['dataset'])
     train_data = GroupDataset(dataset, 'train')
     val_data = GroupDataset(dataset, 'val')
     model = load_item(config['model'], dataset.n_vocab, dataset.n_out, device)
-    print(model)
+    # print(model)
     model.train()
     train_dataloader = DataLoader(train_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     val_dataloader = DataLoader(val_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
-    optim = torch.optim.AdamW(model.parameters(), lr=train_cfg['lr'], 
-                              weight_decay=train_cfg['weight_decay'], 
-                              betas=train_cfg['betas'])
-    lr_schedule = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda=lambda s: min(s / train_cfg['warmup_steps'], 1))
+    optimizer_class = getattr(torch.optim, optimizer)
+    optimizer_status= train_cfg[optimizer+'_status']
+    optim = optimizer_class(model.parameters(), **optimizer_status)
+    lr_schedule = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda=lr_decay(**train_cfg['lr_decay']))
     step = 0
     for x, y in tqdm(train_dataloader):
         loss, logs = model.get_loss(x.to(device), y.to(device))
@@ -86,6 +104,6 @@ def main(cfg : DictConfig):
     train(cfg)
 
 if __name__ == "__main__":
-    main()
+       main()
 
 print(torch.cuda.is_available())  # 如果返回True，则CUDA可用

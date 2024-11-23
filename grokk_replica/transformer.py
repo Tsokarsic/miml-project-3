@@ -5,16 +5,49 @@ import torch.nn.functional as F
 import torch
 import math
 
+class mlpblock(nn.Module):
+    def __init__(self,input_dim,output_dim,add_bias,norm_method):
+        super(mlpblock, self).__init__()
+        self.ff=nn.Linear(input_dim,output_dim,bias=add_bias)
+        self.batchnorm=nn.BatchNorm1d(output_dim)
+        self.layernorm=nn.LayerNorm(output_dim)
+        self.norm=norm_method
+    def forward(self,x):
+        x=self.ff(x)
+        if self.norm=='batchnorm':
+            x=self.batchnorm(x)
+        if self.norm=='layernorm':
+            x=self.layernorm(x)
+        x=F.relu(x)
+        return x
+
+class mlpnetwork(nn.Module):
+    def __init__(self,vocab_size,hidden_dim,num_layers,intermediate_dim,output_size,add_bias,norm_method,num_p):
+        super(mlpnetwork, self).__init__()
+        self.hidden_dim=hidden_dim
+        self.embeddings=nn.Embedding(vocab_size,hidden_dim)
+        self.mlpblock1=mlpblock(2*num_p*hidden_dim,intermediate_dim,add_bias,norm_method)
+        self.mlpblock2=nn.Sequential(*[mlpblock(intermediate_dim,intermediate_dim,add_bias,norm_method) for _ in range(num_layers-1)])
+        self.output_layer=nn.Linear(intermediate_dim,output_size,bias=add_bias)
+    def forward(self,x):
+        #x=self.embeddings(x)
+        x=F.one_hot(x,self.hidden_dim).to(torch.float32)
+        x=x.reshape(x.shape[0],-1)
+        x=self.output_layer(self.mlpblock2(self.mlpblock1(x)))
+        return x
+
 class lstmnetwork(nn.Module):
     def __init__(self, vocab_size, hidden_dim, intermediate_dim, num_layers, dropout, bidirectional,output_size):
         super(lstmnetwork, self).__init__()
+        self.hidden_dim = hidden_dim
         self.lstm=nn.LSTM(hidden_dim, intermediate_dim, num_layers, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.ff1=nn.Linear(intermediate_dim,output_size)
         self.ff2=nn.Linear(2*intermediate_dim,output_size)
         self.embeddings=nn.Embedding(vocab_size,hidden_dim)
         self.bidirectional=bidirectional
+
     def forward(self,x):
-        x=self.embeddings(x)
+        x=F.one_hot(x,self.hidden_dim).to(torch.float32)
         output,_=self.lstm(x)
         if self.bidirectional:
             pred=self.ff2(output)
@@ -74,6 +107,7 @@ class TransformerBlock(nn.Module):
         self.dropout2 = nn.Dropout(p=dropout)
         self.dropout3 = nn.Dropout(p=dropout)
 
+
     def forward(self, x, attn_mask, past_kv=None):
         if not self.pre_norm:
             attn_output, attn_matrix, past_kv = self.attn(x, x, x, attn_mask, past_kv=past_kv)
@@ -117,7 +151,7 @@ class Transformer(nn.Module):
         if past_kvs is not None:
             initial_pos = past_kvs[0][0].shape[1]
         assert initial_pos+x.shape[1] <= self.max_length, 'sequence too long'
-        x = self.dropout(self.embeddings(x) * math.sqrt(self.hidden_dim) + self.positions.weight[initial_pos:initial_pos+x.shape[1], :])
+        x = self.dropout(F.one_hot(x,self.hidden_dim).to(torch.float32) * math.sqrt(self.hidden_dim) + self.positions.weight[initial_pos:initial_pos+x.shape[1], :])
         #print(x.shape)
         step = 0
         for _ in range(self.block_repeats):
