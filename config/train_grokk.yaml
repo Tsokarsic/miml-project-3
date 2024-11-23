@@ -18,9 +18,9 @@ train:
   weight_decay: 0.0
   betas: [0.9, 0.98]
   warmup_steps: 10
-  eval_every: 10
+  eval_every: 100
   eval_batches: 8
-  max_steps: 1e3
+  max_steps: 1e5
 
 wandb:
   use_wandb: true

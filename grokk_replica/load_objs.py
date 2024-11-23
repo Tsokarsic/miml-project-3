@@ -37,8 +37,11 @@ def load_mod_subtract_dataset(config, verbose=True):
 
 @register('grokk_model')
 def load_grokk_model(config, vocab_size, out_size, device, verbose=True):
-    model = GrokkModel(config['transformer_config'], vocab_size, out_size, device).to(device)
+    mode=config['mode']
+    model = GrokkModel(config['transformer_config'],config['lstm_config'],vocab_size, out_size, device,mode).to(device)
+
     if config['checkpoint_path'] is not None:
+        print('this test is using',mode)
         if verbose:
             print(f'loading grokk_model state dict from: {convert_path(config["checkpoint_path"])}')
         model.load_state_dict(torch.load(convert_path(config['checkpoint_path']), map_location='cpu'), strict=config['strict_load'])

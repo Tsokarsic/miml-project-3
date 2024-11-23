@@ -1,4 +1,6 @@
 name: grokk_model
+mode: transformer
+#modeselect:transformer/lstm/mlp
 transformer_config:
   max_length: 5
   heads: 4
@@ -9,5 +11,12 @@ transformer_config:
   block_repeats: 1
   dropout: 0.1
   pre_norm: true
+lstm_config:
+  hidden_dim: 128
+  intermediate_dim: 512
+  num_layers: 1
+  dropout: 0.1
+  bidirectional: True
+
 checkpoint_path: null
 strict_load: true

@@ -1,7 +1,27 @@
+from unicodedata import bidirectional
+
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import math
+
+class lstmnetwork(nn.Module):
+    def __init__(self, vocab_size, hidden_dim, intermediate_dim, num_layers, dropout, bidirectional,output_size):
+        super(lstmnetwork, self).__init__()
+        self.lstm=nn.LSTM(hidden_dim, intermediate_dim, num_layers, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+        self.ff1=nn.Linear(intermediate_dim,output_size)
+        self.ff2=nn.Linear(2*intermediate_dim,output_size)
+        self.embeddings=nn.Embedding(vocab_size,hidden_dim)
+        self.bidirectional=bidirectional
+    def forward(self,x):
+        x=self.embeddings(x)
+        output,_=self.lstm(x)
+        if self.bidirectional:
+            pred=self.ff2(output)
+        else:
+            pred=self.ff1(output)
+        return pred
+
 
 
 class MultiHeadAttention(nn.Module):
@@ -90,7 +110,7 @@ class Transformer(nn.Module):
         # x = (batch, time)
         # attn_mask = (batch, query_time, key_time)
         # past_kvs = list of past_kvs for each layer
-
+        # print(x.shape)
         attns = []
         new_past_kvs = []
         initial_pos = 0
@@ -98,6 +118,7 @@ class Transformer(nn.Module):
             initial_pos = past_kvs[0][0].shape[1]
         assert initial_pos+x.shape[1] <= self.max_length, 'sequence too long'
         x = self.dropout(self.embeddings(x) * math.sqrt(self.hidden_dim) + self.positions.weight[initial_pos:initial_pos+x.shape[1], :])
+        #print(x.shape)
         step = 0
         for _ in range(self.block_repeats):
             for i in range(len(self.transformer_blocks)):
@@ -107,6 +128,7 @@ class Transformer(nn.Module):
                 step += 1
         if self.pre_norm:
             x = self.norm(x)
+        #print(self.output(x).shape)
         return self.output(x), attns, new_past_kvs
 
 def xavier_init(model):
