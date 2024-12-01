@@ -1,5 +1,5 @@
 defaults:
-  - dataset: mod_sum_dataset
+  - dataset: KSumDataset
   - model: grokk_model
   - _self_
 
@@ -9,9 +9,8 @@ optimizer: AdamW
 
 dataset:
   frac_train: 0.4
-  p: 97
-  #注；更改p时，同时更改grokk_model.yaml中hidden_dim的数值为p+2.
-  num_p: 2
+  p: 17
+  num_p: 4
   #注；在更改num_p时，请同时更改grokk_model.yaml中mlp_config中的num_p,保持两者相同
 train_transformer:
     num_workers: 0
@@ -26,13 +25,13 @@ train_transformer:
       #每这些步后更新一次，默认与eval_every相同
       method: linear
       #optional：linear(1/t衰减），quadratic（1/sqrt（t）衰减），exp（e^-t)衰减，这里t表示到第t个更新状态
-      rate: 0.1
+      rate: 0.02
       #衰减参数中的beta
       warmup_steps: 10
 
     AdamW_status:
       lr: 1e-3
-      weight_decay: 0.0
+      weight_decay: 1.0
       betas: [0.9, 0.98]
 
     SGD_status:

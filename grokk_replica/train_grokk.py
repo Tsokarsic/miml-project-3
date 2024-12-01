@@ -2,7 +2,7 @@ import torch
 from torch.optim import lr_scheduler
 from torch.utils import data
 from torch.utils.data import IterableDataset
-from datasets import AbstractDataset
+from datasets import *
 from utils import combine_logs
 from torch.utils.data import DataLoader
 import torch.nn as nn
@@ -10,10 +10,12 @@ import torch.nn as nn
 from tqdm.auto import tqdm
 import hydra
 from omegaconf import DictConfig, OmegaConf
+
+from grokk_replica.datasets import KSumDataset
 from load_objs import load_item
 
 class GroupDataset(IterableDataset):
-    def __init__(self, dataset: AbstractDataset, split: str):
+    def __init__(self, dataset, split: str):
         super(GroupDataset, self).__init__()
         assert split in {'train', 'val'}
         self.dataset = dataset
@@ -82,12 +84,18 @@ def train(config):
             model.eval()
             with torch.no_grad():
                 all_val_logs = []
+                all_test_logs =[ ]
                 for i, (val_x, val_y) in tqdm(enumerate(val_dataloader)):
                     if i >= train_cfg['eval_batches']:
                         break
                     _, val_logs = model.get_loss(val_x.to(device), val_y.to(device))
                     all_val_logs.append(val_logs)
-            out_log = {'val': combine_logs(all_val_logs), 'train': combine_logs([logs]), 'step': (step+1), 
+                for i, (train_x, train_y) in tqdm(enumerate(train_dataloader)):
+                    if i >= train_cfg['eval_batches']:
+                        break
+                    _, test_logs = model.get_loss(train_x.to(device), train_y.to(device))
+                    all_test_logs.append(val_logs)
+            out_log = {'val': combine_logs(all_val_logs),'test': combine_logs(all_test_logs),'train': combine_logs([logs]), 'step': (step+1),
                        'lr': float(lr_schedule.get_last_lr()[0])}
             print(out_log)
             # if wandb_cfg['use_wandb']:

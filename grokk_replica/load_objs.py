@@ -1,5 +1,5 @@
 import torch
-from datasets import ModSumDataset, ModSubtractDataset, ModDivisonDataset, PermutationGroup
+from datasets import ModSumDataset, ModSubtractDataset, ModDivisonDataset, PermutationGroup,KSumDataset
 from grokk_model import GrokkModel
 from utils import convert_path
 registry = {}
@@ -18,6 +18,10 @@ def load_item(config, *args, verbose=True):
     if verbose:
         print(f'loading {name}: {config}')
     return registry[name](config, *args, verbose=verbose)
+
+@register('KSumDataset')
+def load_KSumDataset(config, verbose=True):
+    return KSumDataset(config['p'], config['num_p'],config['frac_train'])
 
 @register('mod_sum_dataset')
 def load_mod_sum_dataset(config, verbose=True):

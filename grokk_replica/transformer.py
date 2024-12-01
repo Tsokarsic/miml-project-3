@@ -22,11 +22,11 @@ class mlpblock(nn.Module):
         return x
 
 class mlpnetwork(nn.Module):
-    def __init__(self,vocab_size,hidden_dim,num_layers,intermediate_dim,output_size,add_bias,norm_method,num_p):
+    def __init__(self,vocab_size,num_layers,intermediate_dim,output_size,add_bias,norm_method,num_p):
         super(mlpnetwork, self).__init__()
-        self.hidden_dim=hidden_dim
-        self.embeddings=nn.Embedding(vocab_size,hidden_dim)
-        self.mlpblock1=mlpblock(2*num_p*hidden_dim,intermediate_dim,add_bias,norm_method)
+        self.hidden_dim=vocab_size
+        self.embeddings=nn.Embedding(vocab_size,self.hidden_dim)
+        self.mlpblock1=mlpblock(2*num_p*self.hidden_dim,intermediate_dim,add_bias,norm_method)
         self.mlpblock2=nn.Sequential(*[mlpblock(intermediate_dim,intermediate_dim,add_bias,norm_method) for _ in range(num_layers-1)])
         self.output_layer=nn.Linear(intermediate_dim,output_size,bias=add_bias)
     def forward(self,x):
@@ -37,13 +37,13 @@ class mlpnetwork(nn.Module):
         return x
 
 class lstmnetwork(nn.Module):
-    def __init__(self, vocab_size, hidden_dim, intermediate_dim, num_layers, dropout, bidirectional,output_size):
+    def __init__(self, vocab_size, intermediate_dim, num_layers, dropout, bidirectional,output_size):
         super(lstmnetwork, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.lstm=nn.LSTM(hidden_dim, intermediate_dim, num_layers, batch_first=True, dropout=dropout, bidirectional=bidirectional)
+        self.hidden_dim = vocab_size
+        self.lstm=nn.LSTM(self.hidden_dim, intermediate_dim, num_layers, batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.ff1=nn.Linear(intermediate_dim,output_size)
         self.ff2=nn.Linear(2*intermediate_dim,output_size)
-        self.embeddings=nn.Embedding(vocab_size,hidden_dim)
+        self.embeddings=nn.Embedding(vocab_size,self.hidden_dim)
         self.bidirectional=bidirectional
 
     def forward(self,x):
@@ -124,21 +124,21 @@ class TransformerBlock(nn.Module):
         return x, attn_matrix, past_kv
 
 class Transformer(nn.Module):
-    def __init__(self, vocab_size, max_length, heads, hidden_dim, attn_dim, intermediate_dim, num_blocks, block_repeats, output_size, dropout=0.1, pre_norm=True):
+    def __init__(self, vocab_size, max_length, heads, attn_dim, intermediate_dim, num_blocks, block_repeats, output_size, dropout=0.1, pre_norm=True):
         super(Transformer, self).__init__()
         self.pre_norm = pre_norm
-        self.hidden_dim = hidden_dim
+        self.hidden_dim = vocab_size
         self.block_repeats = block_repeats
         self.max_length = max_length
         self.transformer_blocks = nn.ModuleList([
-            TransformerBlock(heads, hidden_dim, attn_dim, intermediate_dim, dropout=dropout, pre_norm=pre_norm) for _ in range(num_blocks)
+            TransformerBlock(heads, self.hidden_dim, attn_dim, intermediate_dim, dropout=dropout, pre_norm=pre_norm) for _ in range(num_blocks)
         ])
-        self.embeddings = nn.Embedding(vocab_size, hidden_dim)
-        self.positions = nn.Embedding(max_length, hidden_dim)
-        self.output = nn.Linear(hidden_dim, output_size)
+        self.embeddings = nn.Embedding(vocab_size, self.hidden_dim)
+        self.positions = nn.Embedding(max_length, self.hidden_dim)
+        self.output = nn.Linear(self.hidden_dim, output_size)
         self.dropout = nn.Dropout(p=dropout)
         if self.pre_norm:
-            self.norm = nn.LayerNorm(hidden_dim)
+            self.norm = nn.LayerNorm(self.hidden_dim)
 
     def forward(self, x, attn_mask, past_kvs=None):
         # x = (batch, time)
@@ -174,3 +174,4 @@ def kaiming_init(model):
     for p in model.parameters():
         if p.dim() > 1:
             nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+

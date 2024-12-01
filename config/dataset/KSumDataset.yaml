@@ -1,0 +1,4 @@
+name: KSumDataset
+p: 97
+frac_train: 0.5
+num_p: 2
