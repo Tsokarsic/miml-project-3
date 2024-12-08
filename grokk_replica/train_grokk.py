@@ -9,7 +9,10 @@ import torch.nn as nn
 #import wandb
 from tqdm.auto import tqdm
 import hydra
+from optimizer import GrokAdamW
 from omegaconf import DictConfig, OmegaConf
+from typing import Optional,Dict,Literal
+from collections import deque
 
 from grokk_replica.datasets import KSumDataset
 from load_objs import load_item
@@ -52,6 +55,50 @@ def lr_decay(iter_number,method,rate,warmup_steps):
                 return 1
     return f
 
+def gradfilter_ema(
+m: nn.Module,
+grads: Optional[Dict[str, torch.Tensor]] = None,
+alpha: float = 0.98,
+lamb: float = 2.0,
+ ) -> Dict[str, torch.Tensor]:
+    if grads is None:
+        grads = {n: p.grad.data.detach() for n, p in m.named_parameters() if p.requires_grad and p.grad is not None}
+
+    for n, p in m.named_parameters():
+        if p.requires_grad and n in grads:
+            grads[n] = grads[n] * alpha + p.grad.data.detach() * (1 - alpha)
+            p.grad.data = p.grad.data + grads[n] * lamb
+
+    return grads
+def gradfilter_ma(
+    m: nn.Module,
+    grads: Optional[Dict[str, deque]] = None,
+    window_size: int = 10,
+    lamb: float = 5.0,
+    filter_type: Literal['mean', 'sum'] = 'mean',
+    warmup: bool = True,
+    trigger: bool = False, # For ablation study.
+) -> Dict[str, deque]:
+    if grads is None:
+        grads = {n: deque(maxlen=window_size) for n, p in m.named_parameters() if p.requires_grad and p.grad is not None}
+
+    for n, p in m.named_parameters():
+        if p.requires_grad and p.grad is not None:
+            grads[n].append(p.grad.data.detach()) # .cpu())
+
+            # Modify the gradients.
+            if not warmup or len(grads[n]) == window_size and not trigger:
+                if filter_type == "mean":
+                    avg = sum(grads[n]) / len(grads[n])
+                elif filter_type == "sum":
+                    avg = sum(grads[n])
+                else:
+                    raise ValueError(f"Unrecognized filter_type {filter_type}")
+                p.grad.data = p.grad.data + avg * lamb
+
+    return grads
+
+
 def train(config):
     print('using config:', config)
     mode = config['model']['mode']
@@ -69,16 +116,28 @@ def train(config):
     model.train()
     train_dataloader = DataLoader(train_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     val_dataloader = DataLoader(val_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
-    optimizer_class = getattr(torch.optim, optimizer)
-    optimizer_status= train_cfg[optimizer+'_status']
+    optimizer_status = train_cfg[optimizer + '_status']
+    if 'betas' in optimizer_status:
+        optimizer_status['betas'] = tuple(float(beta) for beta in optimizer_status['betas'])
+    if optimizer == "GrokAdamW":
+        # 使用自定义优化器类
+        from optimizer import GrokAdamW
+        optimizer_class = GrokAdamW
+    else:
+        # 使用torch.optim中的类
+        optimizer_class = getattr(torch.optim, optimizer)
+
     optim = optimizer_class(model.parameters(), **optimizer_status)
     lr_schedule = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda=lr_decay(**train_cfg['lr_decay']))
     step = 0
+    grads = None
     for x, y in tqdm(train_dataloader):
         loss, logs = model.get_loss(x.to(device), y.to(device))
         optim.zero_grad()
         loss.backward()
         optim.step()
+        # grads = gradfilter_ema(model, grads=grads, alpha=0.98, lamb=2.0)
+        grads = gradfilter_ma(model, grads=grads)
         lr_schedule.step()
         if (step+1) % train_cfg['eval_every'] == 0:
             model.eval()

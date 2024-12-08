@@ -8,7 +8,7 @@ transformer_config:
   intermediate_dim: 128
   num_blocks: 2
   block_repeats: 1
-  dropout: 0.1
+  dropout: 0
   pre_norm: true
 lstm_config:
   intermediate_dim: 512
@@ -16,10 +16,10 @@ lstm_config:
   dropout: 0.1
   bidirectional: True
 mlp_config:
-  num_layers: 5
+  num_layers: 2
   intermediate_dim: 128
   add_bias: True
-  norm_method: batchnorm
+  norm_method: None
   num_p: 2
 
 checkpoint_path: null

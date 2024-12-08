@@ -5,6 +5,14 @@ import torch.nn.functional as F
 import torch
 import math
 
+
+class Nonlinearity(nn.Module):
+    def __init__(self):
+        super(Nonlinearity, self).__init__()
+    def forward(self, x):
+        # 使用torch.where来选择不同的激活方式
+        # 当x > 1时，使用x^2；否则使用x（线性）
+        return torch.where(x > 1, x ** 2, x)
 class mlpblock(nn.Module):
     def __init__(self,input_dim,output_dim,add_bias,norm_method):
         super(mlpblock, self).__init__()
@@ -12,6 +20,7 @@ class mlpblock(nn.Module):
         self.batchnorm=nn.BatchNorm1d(output_dim)
         self.layernorm=nn.LayerNorm(output_dim)
         self.norm=norm_method
+        self.leakyrelu=nn.LeakyReLU(negative_slope=0.01)
     def forward(self,x):
         x=self.ff(x)
         if self.norm=='batchnorm':

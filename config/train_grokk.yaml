@@ -1,5 +1,5 @@
 defaults:
-  - dataset: KSumDataset
+  - dataset: mod_sum_dataset
   - model: grokk_model
   - _self_
 
@@ -9,8 +9,8 @@ optimizer: AdamW
 
 dataset:
   frac_train: 0.4
-  p: 17
-  num_p: 4
+  p: 97
+  num_p: 2
   #注；在更改num_p时，请同时更改grokk_model.yaml中mlp_config中的num_p,保持两者相同
 train_transformer:
     num_workers: 0
@@ -25,20 +25,37 @@ train_transformer:
       #每这些步后更新一次，默认与eval_every相同
       method: linear
       #optional：linear(1/t衰减），quadratic（1/sqrt（t）衰减），exp（e^-t)衰减，这里t表示到第t个更新状态
-      rate: 0.02
+      rate: 0.01
       #衰减参数中的beta
       warmup_steps: 10
 
     AdamW_status:
       lr: 1e-3
-      weight_decay: 1.0
+      weight_decay: 1
       betas: [0.9, 0.98]
+
+    Adam_status:
+      lr: 1e-3
+      weight_decay: 0.1
+      betas: [ 0.9, 0.98 ]
+
+    GrokAdamW_status:
+      lr: 1e-3
+      betas: [ 0.9 , 0.98 ]
+      eps: 1e-8
+      weight_decay: 1
+      alpha_init: 0.98
+      lamb: 2.0
+      gamma: 0.1
+      grokking_signal_fns: None
+      grokking_signal_decay_rate: 0.1
+      gradient_clipping: 1.0
 
     SGD_status:
       lr: 1e-2
-      weight_decay: 1.0
-      momentum: 0.1
-      nesterov: True
+      weight_decay: 0.0
+      momentum: 0.99
+      nesterov: False
 
     RMSProp_status:
       lr: 0.01
@@ -63,18 +80,18 @@ train_mlp:
   lr_decay:
     iter_number: 100
     method: linear
-    rate: 0.1
+    rate: 0
     warmup_steps: 10
 
   AdamW_status:
     lr: 1e-3
-    weight_decay: 0.0
+    weight_decay: 1.0
     betas: [ 0.9, 0.98 ]
 
   SGD_status:
     lr: 1e-2
-    weight_decay: 1.0
-    momentum: 0.1
+    weight_decay: 0.0
+    momentum: 0.99
     nesterov: True
 
   RMSProp_status:
@@ -97,7 +114,7 @@ train_lstm:
   lr_decay:
     iter_number: 100
     method: linear
-    rate: 0.1
+    rate: 0.01
     warmup_steps: 10
 
   AdamW_status:
