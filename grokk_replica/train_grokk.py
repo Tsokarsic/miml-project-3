@@ -2,14 +2,15 @@ import torch
 from torch.optim import lr_scheduler
 from torch.utils import data
 from torch.utils.data import IterableDataset
+from utils import causal_attn_mask, parameter_norm
 from datasets import *
 from utils import combine_logs
 from torch.utils.data import DataLoader
 import torch.nn as nn
-#import wandb
+import wandb
 from tqdm.auto import tqdm
 import hydra
-from optimizer import GrokAdamW
+from optimizer import *
 from omegaconf import DictConfig, OmegaConf
 from typing import Optional,Dict,Literal
 from collections import deque
@@ -104,9 +105,9 @@ def train(config):
     mode = config['model']['mode']
     optimizer=config['optimizer']
     train_cfg = config['train_'+mode]
-    # wandb_cfg = config['wandb']
-    # if wandb_cfg['use_wandb']:
-    #     wandb.init(project=wandb_cfg['wandb_project'], config=config)
+    wandb_cfg = config['wandb']
+    if wandb_cfg['use_wandb']:
+        wandb.init(project=wandb_cfg['wandb_project'], config=config)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset = load_item(config['dataset'])
     train_data = GroupDataset(dataset, 'train')
@@ -114,6 +115,7 @@ def train(config):
     model = load_item(config['model'], dataset.n_vocab, dataset.n_out, device)
     # print(model)
     model.train()
+    model.xavier_init()
     train_dataloader = DataLoader(train_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     val_dataloader = DataLoader(val_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     optimizer_status = train_cfg[optimizer + '_status']
@@ -128,16 +130,34 @@ def train(config):
         optimizer_class = getattr(torch.optim, optimizer)
 
     optim = optimizer_class(model.parameters(), **optimizer_status)
+    SAM=config['using_SAM']
+    if SAM=='ASAM':
+        optim=ASAM(optim,config['rho'],adaptive=True)
     lr_schedule = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda=lr_decay(**train_cfg['lr_decay']))
     step = 0
     grads = None
     for x, y in tqdm(train_dataloader):
+        # max_norm = max(param.data.abs().max().item() for param in model.parameters() if param.requires_grad)
         loss, logs = model.get_loss(x.to(device), y.to(device))
         optim.zero_grad()
         loss.backward()
         optim.step()
+        max_norm = max(param.grad.abs().max().item()
+                       for group in optim.param_groups
+                       for param in group['params']
+                       if param.grad is not None and param.grad.abs().max().item() > 0
+                       )
+        param_norm = math.sqrt(
+            sum(
+                (param.grad ** 2).sum().item()
+                for group in optim.param_groups
+                for param in group['params']
+                if param.grad is not None and param.grad.abs().max().item() > 0
+            )
+        )
+
         # grads = gradfilter_ema(model, grads=grads, alpha=0.98, lamb=2.0)
-        grads = gradfilter_ma(model, grads=grads)
+        # grads = gradfilter_ma(model, grads=grads)
         lr_schedule.step()
         if (step+1) % train_cfg['eval_every'] == 0:
             model.eval()
@@ -155,10 +175,10 @@ def train(config):
                     _, test_logs = model.get_loss(train_x.to(device), train_y.to(device))
                     all_test_logs.append(val_logs)
             out_log = {'val': combine_logs(all_val_logs),'test': combine_logs(all_test_logs),'train': combine_logs([logs]), 'step': (step+1),
-                       'lr': float(lr_schedule.get_last_lr()[0])}
+                       'lr': float(lr_schedule.get_last_lr()[0]), 'l-infinity-norm': max_norm, 'l2-norm':param_norm}
             print(out_log)
-            # if wandb_cfg['use_wandb']:
-            #     wandb.log(out_log)
+            if wandb_cfg['use_wandb']:
+                wandb.log(out_log)
             model.train()
         step += 1
         if train_cfg['max_steps'] is not None and step >= train_cfg['max_steps']:

@@ -154,7 +154,7 @@ class ModSubtractDataset(AbstractDataset):
         self.p = p
     
     def fetch_output(self, a, b):
-        return (a - b) % self.p
+        return (a * b) % self.p
 
 class ModDivisonDataset(AbstractDataset):
     """

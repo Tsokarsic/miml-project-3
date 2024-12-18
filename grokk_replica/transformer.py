@@ -27,14 +27,15 @@ class mlpblock(nn.Module):
             x=self.batchnorm(x)
         if self.norm=='layernorm':
             x=self.layernorm(x)
-        x=F.relu(x)
+        x = torch.where(x > 1, x ** 2, F.relu(x))
+        # x=F.gelu(x)
         return x
 
 class mlpnetwork(nn.Module):
     def __init__(self,vocab_size,num_layers,intermediate_dim,output_size,add_bias,norm_method,num_p):
         super(mlpnetwork, self).__init__()
         self.hidden_dim=vocab_size
-        self.embeddings=nn.Embedding(vocab_size,self.hidden_dim)
+        # self.embeddings=nn.Embedding(vocab_size,self.hidden_dim)
         self.mlpblock1=mlpblock(2*num_p*self.hidden_dim,intermediate_dim,add_bias,norm_method)
         self.mlpblock2=nn.Sequential(*[mlpblock(intermediate_dim,intermediate_dim,add_bias,norm_method) for _ in range(num_layers-1)])
         self.output_layer=nn.Linear(intermediate_dim,output_size,bias=add_bias)
@@ -44,6 +45,16 @@ class mlpnetwork(nn.Module):
         x=x.reshape(x.shape[0],-1)
         x=self.output_layer(self.mlpblock2(self.mlpblock1(x)))
         return x
+
+    def xavier_init(model):
+        for p in model.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
+    def kaiming_init(model):
+        for p in model.parameters():
+            if p.dim() > 1:
+                nn.init.kaiming_uniform_(p, a=math.sqrt(5))
 
 class lstmnetwork(nn.Module):
     def __init__(self, vocab_size, intermediate_dim, num_layers, dropout, bidirectional,output_size):
@@ -63,6 +74,16 @@ class lstmnetwork(nn.Module):
         else:
             pred=self.ff1(output)
         return pred
+
+    def xavier_init(model):
+        for p in model.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
+    def kaiming_init(model):
+        for p in model.parameters():
+            if p.dim() > 1:
+                nn.init.kaiming_uniform_(p, a=math.sqrt(5))
 
 
 

@@ -4,6 +4,11 @@ defaults:
   - _self_
 
 optimizer: AdamW
+using_SAM:
+#输入ASAM使用sharpness aware优化器
+rho: 0
+#sharpness的比例参数
+
 #直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致
 #可在所使用模型对应优化器的optimizer_status中设置相关参数
 
@@ -17,7 +22,7 @@ train_transformer:
     bsize: 512
     eval_every: 100
     eval_batches: 8
-    max_steps: 1e5
+    max_steps: 4e3
 
     lr_decay:
       iter_number: 100
@@ -36,7 +41,7 @@ train_transformer:
 
     Adam_status:
       lr: 1e-3
-      weight_decay: 0.1
+      weight_decay: 1
       betas: [ 0.9, 0.98 ]
 
     GrokAdamW_status:
@@ -49,17 +54,17 @@ train_transformer:
       gamma: 0.1
       grokking_signal_fns: None
       grokking_signal_decay_rate: 0.1
-      gradient_clipping: 1.0
+      gradient_clipping: 0.1
 
     SGD_status:
       lr: 1e-2
       weight_decay: 0.0
       momentum: 0.99
-      nesterov: False
+      nesterov: True
 
-    RMSProp_status:
+    RMSprop_status:
       lr: 0.01
-      alpha: 0.99
+      alpha: 0.98
       eps: 1e-08
       weight_decay: 0
       momentum: 0
@@ -84,7 +89,7 @@ train_mlp:
     warmup_steps: 10
 
   AdamW_status:
-    lr: 1e-3
+    lr: 5e-4
     weight_decay: 1.0
     betas: [ 0.9, 0.98 ]
 
@@ -94,13 +99,25 @@ train_mlp:
     momentum: 0.99
     nesterov: True
 
-  RMSProp_status:
+  RMSprop_status:
     lr: 0.01
     alpha: 0.99
     eps: 1e-08
     weight_decay: 0
     momentum: 0
     centered: False
+  GrokAdamW_status:
+    lr: 1e-3
+    betas: [ 0.9 , 0.98 ]
+    eps: 1e-8
+    weight_decay: 1
+    alpha_init: 0.98
+    lamb: 2.0
+    gamma: 0.1
+    grokking_signal_fns: None
+    grokking_signal_decay_rate: 0.1
+    gradient_clipping: 0.1
+
 
 
 
@@ -128,12 +145,12 @@ train_lstm:
     momentum: 0.1
     nesterov: True
 
-  RMSProp_status:
+  RMSprop_status:
     lr: 0.01
     alpha: 0.99
     eps: 1e-08
     weight_decay: 0
-    momentum: 0
+    momentum: 0.9
     centered: False
 
 
