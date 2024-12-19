@@ -10,7 +10,7 @@ from typing import List, Tuple
 
 
 class KSumDataset(abc.ABC):
-    def __init__(self, p: int, k: int, frac_train: float):
+    def __init__(self, p: int, k: int, frac_train: float,seed: int = None):
         """
         Initialize the KSumDataset with multiple groups of elements and k-tuple combinations.
         , group_elements: List[Set[int]]
@@ -20,6 +20,8 @@ class KSumDataset(abc.ABC):
         :param frac_train: Fraction of data to be used
          for training (rest for validation).
         """
+        if seed is not None:
+            random.seed(seed)
         self.p = p
         # self.group_elements = group_elements
         self.k = k
@@ -77,19 +79,23 @@ class KSumDataset(abc.ABC):
         return self.fetch_example(idx)
 
 
-#
-# dataset = KSumDataset(p=7, k=3,frac_train=0.4)
+
+# dataset = KSumDataset(p=3, k=3,frac_train=0.4)
 # train_example = dataset.fetch_train_example()
 # val_example = dataset.fetch_val_example()
 # print("Training Example:", train_example)
 # print("Validation Example:", val_example)
+# print('start:',dataset.train_pairs)
+# print(dataset.val_pairs)
 
 
 class AbstractDataset(abc.ABC):
     """
 
     """
-    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float):
+    def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float,seed: int = None):
+        if seed is not None:
+            random.seed(seed)
         self.frac_train = frac_train
         self.group_elements1 = group_elements1
         self.group_elements2 = group_elements2
@@ -138,8 +144,8 @@ class ModSumDataset(AbstractDataset):
 
 
     Detailed description of ModSum"""
-    def __init__(self, p, frac_train):
-        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train)
+    def __init__(self, p, frac_train,seed: int = None):
+        super(ModSumDataset, self).__init__(set(range(p)), set(range(p)), frac_train,seed)
         self.p = p
     
     def fetch_output(self, a, b):

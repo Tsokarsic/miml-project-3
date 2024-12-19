@@ -181,8 +181,12 @@ class Transformer(nn.Module):
         if past_kvs is not None:
             initial_pos = past_kvs[0][0].shape[1]
         assert initial_pos+x.shape[1] <= self.max_length, 'sequence too long'
+        # x = self.dropout(
+        #     self.embeddings(x) * math.sqrt(self.hidden_dim)
+        #     + self.positions.weight[initial_pos:initial_pos + x.shape[1], :]
+        # )
         x = self.dropout(F.one_hot(x,self.hidden_dim).to(torch.float32) * math.sqrt(self.hidden_dim) + self.positions.weight[initial_pos:initial_pos+x.shape[1], :])
-        #print(x.shape)
+        # #print(x.shape)
         step = 0
         for _ in range(self.block_repeats):
             for i in range(len(self.transformer_blocks)):

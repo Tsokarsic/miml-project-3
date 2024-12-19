@@ -21,15 +21,15 @@ def load_item(config, *args, verbose=True):
 
 @register('KSumDataset')
 def load_KSumDataset(config, verbose=True):
-    return KSumDataset(config['p'], config['num_p'],config['frac_train'])
+    return KSumDataset(config['p'], config['num_p'],config['frac_train'],config['seed'])
 
 @register('mod_sum_dataset')
 def load_mod_sum_dataset(config, verbose=True):
-    return ModSumDataset(config['p'], config['frac_train'])
+    return ModSumDataset(config['p'], config['frac_train'],config['seed'])
 
 @register('mod_subtract_dataset')
 def load_mod_subtract_dataset(config, verbose=True):
-    return ModSubtractDataset(config['p'], config['frac_train'])
+    return ModSubtractDataset(config['p'], config['frac_train'],config['seed'])
 
 @register('mod_division_dataset')
 def load_mod_subtract_dataset(config, verbose=True):

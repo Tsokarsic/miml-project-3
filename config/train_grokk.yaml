@@ -6,7 +6,7 @@ defaults:
 optimizer: AdamW
 using_SAM:
 #输入ASAM使用sharpness aware优化器
-rho: 0
+rho: 1
 #sharpness的比例参数
 
 #直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致
@@ -16,13 +16,14 @@ dataset:
   frac_train: 0.4
   p: 97
   num_p: 2
+  seed: None
   #注；在更改num_p时，请同时更改grokk_model.yaml中mlp_config中的num_p,保持两者相同
 train_transformer:
     num_workers: 0
     bsize: 512
     eval_every: 100
     eval_batches: 8
-    max_steps: 4e3
+    max_steps: 1.5e4
 
     lr_decay:
       iter_number: 100
@@ -30,7 +31,7 @@ train_transformer:
       #每这些步后更新一次，默认与eval_every相同
       method: linear
       #optional：linear(1/t衰减），quadratic（1/sqrt（t）衰减），exp（e^-t)衰减，这里t表示到第t个更新状态
-      rate: 0.01
+      rate: 0
       #衰减参数中的beta
       warmup_steps: 10
 

@@ -2,7 +2,7 @@ import torch
 from torch.optim import lr_scheduler
 from torch.utils import data
 from torch.utils.data import IterableDataset
-from utils import causal_attn_mask, parameter_norm
+
 from datasets import *
 from utils import combine_logs
 from torch.utils.data import DataLoader
@@ -115,7 +115,7 @@ def train(config):
     model = load_item(config['model'], dataset.n_vocab, dataset.n_out, device)
     # print(model)
     model.train()
-    model.xavier_init()
+    # model.xavier_init()
     train_dataloader = DataLoader(train_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     val_dataloader = DataLoader(val_data, num_workers=train_cfg['num_workers'], batch_size=train_cfg['bsize'])
     optimizer_status = train_cfg[optimizer + '_status']
@@ -147,15 +147,6 @@ def train(config):
                        for param in group['params']
                        if param.grad is not None and param.grad.abs().max().item() > 0
                        )
-        param_norm = math.sqrt(
-            sum(
-                (param.grad ** 2).sum().item()
-                for group in optim.param_groups
-                for param in group['params']
-                if param.grad is not None and param.grad.abs().max().item() > 0
-            )
-        )
-
         # grads = gradfilter_ema(model, grads=grads, alpha=0.98, lamb=2.0)
         # grads = gradfilter_ma(model, grads=grads)
         lr_schedule.step()
@@ -175,7 +166,7 @@ def train(config):
                     _, test_logs = model.get_loss(train_x.to(device), train_y.to(device))
                     all_test_logs.append(val_logs)
             out_log = {'val': combine_logs(all_val_logs),'test': combine_logs(all_test_logs),'train': combine_logs([logs]), 'step': (step+1),
-                       'lr': float(lr_schedule.get_last_lr()[0]), 'l-infinity-norm': max_norm, 'l2-norm':param_norm}
+                       'lr': float(lr_schedule.get_last_lr()[0]), 'l-infinity-norms': max_norm}
             print(out_log)
             if wandb_cfg['use_wandb']:
                 wandb.log(out_log)

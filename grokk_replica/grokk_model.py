@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformer import Transformer,lstmnetwork,mlpnetwork
 from utils import causal_attn_mask, parameter_norm
+import math
 
 class GrokkModel(nn.Module):
     def __init__(self, transformer_config,lstm_config ,mlp_config,vocab_size, output_size, device, mode):
