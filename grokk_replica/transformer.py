@@ -20,15 +20,16 @@ class mlpblock(nn.Module):
         self.batchnorm=nn.BatchNorm1d(output_dim)
         self.layernorm=nn.LayerNorm(output_dim)
         self.norm=norm_method
-        self.leakyrelu=nn.LeakyReLU(negative_slope=0.01)
+        self.leakyrelu=nn.LeakyReLU(negative_slope=0.05)
     def forward(self,x):
         x=self.ff(x)
         if self.norm=='batchnorm':
             x=self.batchnorm(x)
         if self.norm=='layernorm':
             x=self.layernorm(x)
-        x = torch.where(x > 1, x ** 2, F.relu(x))
-        # x=F.gelu(x)
+        # x = torch.where(x > 1, x ** 2, F.relu(x))
+        # x=self.leakyrelu(x)
+        x=F.relu(x)**3
         return x
 
 class mlpnetwork(nn.Module):
@@ -186,7 +187,7 @@ class Transformer(nn.Module):
         #     + self.positions.weight[initial_pos:initial_pos + x.shape[1], :]
         # )
         x = self.dropout(F.one_hot(x,self.hidden_dim).to(torch.float32) * math.sqrt(self.hidden_dim) + self.positions.weight[initial_pos:initial_pos+x.shape[1], :])
-        # #print(x.shape)
+        # # #print(x.shape)
         step = 0
         for _ in range(self.block_repeats):
             for i in range(len(self.transformer_blocks)):

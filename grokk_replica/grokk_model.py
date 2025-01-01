@@ -45,9 +45,28 @@ class GrokkModel(nn.Module):
         else:
             param_norm = parameter_norm(self.mlpnetwork)
             max_norm = max(param.data.abs().max().item() for param in self.mlpnetwork.parameters() if param.requires_grad)
-        return loss, {'loss': (loss.item(), x.shape[0]), 'accuracy': (accuracy.item(), x.shape[0]),
+        return loss, {'loss': (loss.item(), x.shape[0]), 'accuracy': (accuracy.item(), x.shape[0])}
                       # 'attn_entropy': (attn_entropies, len(attns)*x.shape[0]*(x.shape[1]-1)),
-        }
+
+    def get_train_accuracy(self, x, y):
+        predictions= self(x)
+        if self.mode !='mlp':
+            predictions=predictions[:, -1, :]
+        # print(torch.argmax(predictions[:, -1, :], dim=-1), x[:, -1])
+        loss = F.cross_entropy(predictions, y)
+        accuracy = (torch.argmax(predictions, dim=-1) == y).float().mean()
+        #attn_entropies = sum([-(attn * torch.log(attn+1e-7)).sum(dim=-1).mean().item() for attn in attns]) / len(attns)
+        if self.mode=='lstm':
+            param_norm = parameter_norm(self.lstmnetwork)
+            max_norm = max(param.data.abs().max().item() for param in self.lstmnetwork.parameters() if param.requires_grad)
+        elif self.mode=='transformer':
+            param_norm = parameter_norm(self.transformer)
+            max_norm = max(param.data.abs().max().item() for param in self.transformer.parameters() if param.requires_grad)
+        else:
+            param_norm = parameter_norm(self.mlpnetwork)
+            max_norm = max(param.data.abs().max().item() for param in self.mlpnetwork.parameters() if param.requires_grad)
+        return accuracy
+
 
     def xavier_init(model):
         for p in model.parameters():
@@ -58,3 +77,13 @@ class GrokkModel(nn.Module):
         for p in model.parameters():
             if p.dim() > 1:
                 nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+
+    def orthogonal_init(self, gain=1):
+        """
+        使用正交初始化方法初始化模型权重参数
+        Args:
+            gain (float): 用于缩放的增益因子。默认值为 1。
+        """
+        for p in self.parameters():
+            if p.dim() > 1:  # 仅对多维参数应用正交初始化
+                nn.init.orthogonal_(p, gain=gain)

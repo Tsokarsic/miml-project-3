@@ -4,16 +4,18 @@ defaults:
   - _self_
 
 optimizer: AdamW
-using_SAM:
-#输入ASAM使用sharpness aware优化器
-rho: 1
-#sharpness的比例参数
-
 #直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致
 #可在所使用模型对应优化器的optimizer_status中设置相关参数
+using_SAM:
+#输入ASAM添加sharpness aware优化方法（与优化器结合使用）,否则默认不使用
+rho: 1
+#sharpness的比例参数
+init_method: default
+#这里填入：default/orthogonal/xavier/kaiming，以选取不同的初始化方法
+
 
 dataset:
-  frac_train: 0.4
+  frac_train: 0.2
   p: 97
   num_p: 2
   seed: None
@@ -23,7 +25,8 @@ train_transformer:
     bsize: 512
     eval_every: 100
     eval_batches: 8
-    max_steps: 1.5e4
+
+    max_steps: 1e5
 
     lr_decay:
       iter_number: 100
@@ -44,18 +47,6 @@ train_transformer:
       lr: 1e-3
       weight_decay: 1
       betas: [ 0.9, 0.98 ]
-
-    GrokAdamW_status:
-      lr: 1e-3
-      betas: [ 0.9 , 0.98 ]
-      eps: 1e-8
-      weight_decay: 1
-      alpha_init: 0.98
-      lamb: 2.0
-      gamma: 0.1
-      grokking_signal_fns: None
-      grokking_signal_decay_rate: 0.1
-      gradient_clipping: 0.1
 
     SGD_status:
       lr: 1e-2
@@ -94,6 +85,11 @@ train_mlp:
     weight_decay: 1.0
     betas: [ 0.9, 0.98 ]
 
+  Adam_status:
+    lr: 1e-3
+    weight_decay: 1
+    betas: [ 0.9, 0.98 ]
+
   SGD_status:
     lr: 1e-2
     weight_decay: 0.0
@@ -107,17 +103,6 @@ train_mlp:
     weight_decay: 0
     momentum: 0
     centered: False
-  GrokAdamW_status:
-    lr: 1e-3
-    betas: [ 0.9 , 0.98 ]
-    eps: 1e-8
-    weight_decay: 1
-    alpha_init: 0.98
-    lamb: 2.0
-    gamma: 0.1
-    grokking_signal_fns: None
-    grokking_signal_decay_rate: 0.1
-    gradient_clipping: 0.1
 
 
 
@@ -140,6 +125,11 @@ train_lstm:
     weight_decay: 0.0
     betas: [ 0.9, 0.98 ]
 
+  Adam_status:
+    lr: 1e-3
+    weight_decay: 1
+    betas: [ 0.9, 0.98 ]
+
   SGD_status:
     lr: 1e-2
     weight_decay: 1.0
@@ -158,3 +148,10 @@ train_lstm:
 wandb:
   use_wandb: true
   wandb_project: grokking_replica
+
+use_edge_popup: false
+sparsity: 0.9
+max_edge_popup_steps: 10000
+accuracy_threshold: 1.0
+post_threshold_wait_steps: 500
+#忽略这些超参数即可

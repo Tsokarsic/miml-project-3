@@ -94,8 +94,7 @@ class AbstractDataset(abc.ABC):
 
     """
     def __init__(self, group_elements1: Set, group_elements2: Set, frac_train: float,seed: int = None):
-        if seed is not None:
-            random.seed(seed)
+
         self.frac_train = frac_train
         self.group_elements1 = group_elements1
         self.group_elements2 = group_elements2
