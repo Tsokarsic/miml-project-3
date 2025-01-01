@@ -6,7 +6,7 @@ defaults:
 optimizer: AdamW
 #直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致,这里可选Adam/AdamW/SGD/RMSProp
 #可在所使用模型对应优化器的optimizer_status中设置相关参数（如momentum，weight decay等）
-using_SAM: ASAM
+using_SAM:
 #输入ASAM添加sharpness aware优化方法（与优化器结合使用）,否则默认不使用
 rho: 1
 #sharpness的比例参数

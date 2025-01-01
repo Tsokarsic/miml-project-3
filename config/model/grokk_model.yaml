@@ -3,6 +3,7 @@ mode: transformer
 #在这里选取模型的类型:transformer/lstm/mlp，下面是对应模型的结构参数
 transformer_config:
   max_length: 5
+#保持这个等于2*num_p+1
   heads: 4
   attn_dim: 32
   intermediate_dim: 512
@@ -13,7 +14,7 @@ transformer_config:
 lstm_config:
   intermediate_dim: 512
   num_layers: 1
-  dropout: 0.1
+  dropout: 0
   bidirectional: True
 mlp_config:
   num_layers: 2
@@ -21,6 +22,7 @@ mlp_config:
   add_bias: True
   norm_method: batchnorm
   num_p: 2
+#保持这个等于num_p
 
 checkpoint_path: null
 strict_load: true
