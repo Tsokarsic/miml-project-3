@@ -11,7 +11,7 @@ optimizer.py：报告中ASAM优化器的具体实现。
 load_objs.py:加载数据集和模型的接口。  
 transformer.py:项目中模型的基本结构，这里为方便统一将transformer，mlp，lstm三个模型的结构均写在此文件中。   
 grokk_model.py：项目中用到的模型，包含调用基本模型的接口，损失函数和初始化方式等模型训练方式。  
-utils.py：一些所用到的其他函数的编写
+utils.py：一些所用到的其他函数的编写  
 train_grokk.py:项目的主函数，包括数据集的构建，模型和数据的导入和调用，完整的训练过程  
 和结果的可视化（使用wandb)  
 3.项目所需要安装的软件包  
