@@ -1,14 +1,78 @@
 
 
 import math
-import torch
-from torch.optim import Optimizer
 from torch.cuda.amp import autocast
 from typing import Iterable, Callable, Optional, Tuple, List
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+import torch
+from torch.optim import Optimizer
+
+
+class ASAM(Optimizer):
+    def __init__(self, base_optimizer, rho=0.5,adaptive=True):
+        """
+        ASAM: Adaptive Sharpness-Aware Minimization
+        Args:
+            params: The model parameters to optimize.
+            base_optimizer: The base optimizer used for updates (e.g., SGD, Adam).
+            rho: The radius of sharpness-aware perturbation.
+            eta: Step size for ASAM updates.
+            adaptive: Whether the optimizer is adaptive to parameter scales.
+        """
+        params = base_optimizer.param_groups[0]["params"]
+        self.base_optimizer = base_optimizer
+        self.rho = rho
+        self.adaptive = adaptive
+
+        # 确保 defaults 从 base_optimizer 中继承
+        defaults = base_optimizer.defaults
+        super(ASAM, self).__init__(params, defaults)
+
+    @torch.no_grad()
+    def _get_grad_norm(self):
+        """Compute the norm of the parameter gradients."""
+        norm = torch.norm(
+            torch.stack([
+                (p.grad / (torch.abs(p) if self.adaptive else 1)).norm(p=2)
+                for group in self.param_groups for p in group['params'] if p.grad is not None
+            ])
+        )
+        return norm
+
+    @torch.no_grad()
+    def step(self):
+        """Perform one adaptive sharpness-aware step."""
+        grad_norm = self._get_grad_norm()
+        scale = self.rho / (grad_norm + 1e-12)  # Scale factor for perturbation
+
+        # Perform perturbation step
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                # Update scale_factor to properly handle broadcasting
+                scale_tensor = scale
+                if self.adaptive:
+                    scale_tensor = scale * torch.abs(p)
+                p.add_(p.grad * scale_tensor)
+
+        self.base_optimizer.step()  # Base optimizer step
+
+        # Reverse the perturbation
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                # Consistently reverse the scale_tensor
+                scale_tensor = scale
+                if self.adaptive:
+                    scale_tensor = scale * torch.abs(p)
+                p.sub_(p.grad * scale_tensor)
+
 
 
 class GrokAdamW(Optimizer):
@@ -155,69 +219,3 @@ class GrokAdamW(Optimizer):
             group.setdefault('grokking_signal_fns', [])
             group.setdefault('grokking_signal_decay_rate', 0.1)
             group.setdefault('gradient_clipping', 1.0)
-import torch
-from torch.optim import Optimizer
-
-
-class ASAM(Optimizer):
-    def __init__(self, base_optimizer, rho=0.5,adaptive=True):
-        """
-        ASAM: Adaptive Sharpness-Aware Minimization
-        Args:
-            params: The model parameters to optimize.
-            base_optimizer: The base optimizer used for updates (e.g., SGD, Adam).
-            rho: The radius of sharpness-aware perturbation.
-            eta: Step size for ASAM updates.
-            adaptive: Whether the optimizer is adaptive to parameter scales.
-        """
-        params = base_optimizer.param_groups[0]["params"]
-        self.base_optimizer = base_optimizer
-        self.rho = rho
-        self.adaptive = adaptive
-
-        # 确保 defaults 从 base_optimizer 中继承
-        defaults = base_optimizer.defaults
-        super(ASAM, self).__init__(params, defaults)
-
-    @torch.no_grad()
-    def _get_grad_norm(self):
-        """Compute the norm of the parameter gradients."""
-        norm = torch.norm(
-            torch.stack([
-                (p.grad / (torch.abs(p) if self.adaptive else 1)).norm(p=2)
-                for group in self.param_groups for p in group['params'] if p.grad is not None
-            ])
-        )
-        return norm
-
-    @torch.no_grad()
-    def step(self):
-        """Perform one adaptive sharpness-aware step."""
-        grad_norm = self._get_grad_norm()
-        scale = self.rho / (grad_norm + 1e-12)  # Scale factor for perturbation
-
-        # Perform perturbation step
-        for group in self.param_groups:
-            for p in group['params']:
-                if p.grad is None:
-                    continue
-                # Update scale_factor to properly handle broadcasting
-                scale_tensor = scale
-                if self.adaptive:
-                    scale_tensor = scale * torch.abs(p)
-                p.add_(p.grad * scale_tensor)
-
-        self.base_optimizer.step()  # Base optimizer step
-
-        # Reverse the perturbation
-        for group in self.param_groups:
-            for p in group['params']:
-                if p.grad is None:
-                    continue
-                # Consistently reverse the scale_tensor
-                scale_tensor = scale
-                if self.adaptive:
-                    scale_tensor = scale * torch.abs(p)
-                p.sub_(p.grad * scale_tensor)
-
-

@@ -4,9 +4,9 @@ defaults:
   - _self_
 
 optimizer: AdamW
-#直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致
-#可在所使用模型对应优化器的optimizer_status中设置相关参数
-using_SAM:
+#直接在这里更改优化器，保持名称与torch.optim后面的函数名称一致,这里可选Adam/AdamW/SGD/RMSProp
+#可在所使用模型对应优化器的optimizer_status中设置相关参数（如momentum，weight decay等）
+using_SAM: ASAM
 #输入ASAM添加sharpness aware优化方法（与优化器结合使用）,否则默认不使用
 rho: 1
 #sharpness的比例参数
@@ -16,10 +16,15 @@ init_method: default
 
 dataset:
   frac_train: 0.2
+  #训练集的占比
   p: 97
+  #素数p
   num_p: 2
+  #加法元的个数
   seed: None
-  #注；在更改num_p时，请同时更改grokk_model.yaml中mlp_config中的num_p,保持两者相同
+  #注；在更改num_p时，请同时更改grokk_model.yaml中mlp_config中的num_p,保持两者相同，
+  #同时调整transformer_config中的max_length为2*num_p+1，并将dataset改为“KSumDataset”
+
 train_transformer:
     num_workers: 0
     bsize: 512
@@ -27,7 +32,7 @@ train_transformer:
     eval_batches: 8
 
     max_steps: 1e5
-
+    #最大训练步数
     lr_decay:
       iter_number: 100
       #后续模型的参数注释相同
@@ -51,8 +56,8 @@ train_transformer:
     SGD_status:
       lr: 1e-2
       weight_decay: 0.0
-      momentum: 0.99
-      nesterov: True
+      momentum: 0
+      nesterov: false
 
     RMSprop_status:
       lr: 0.01
@@ -147,11 +152,13 @@ train_lstm:
 
 wandb:
   use_wandb: true
+#是否使用wandb可视化结果
   wandb_project: grokking_replica
+#更改希望的项目名
 
-use_edge_popup: false
-sparsity: 0.9
-max_edge_popup_steps: 10000
-accuracy_threshold: 1.0
-post_threshold_wait_steps: 500
-#忽略这些超参数即可
+#use_edge_popup: false
+#sparsity: 0.9
+#max_edge_popup_steps: 10000
+#accuracy_threshold: 1.0
+#post_threshold_wait_steps: 500
+##忽略这些超参数即可

@@ -1,6 +1,6 @@
 name: grokk_model
-mode: mlp
-#modeselect:transformer/lstm/mlp
+mode: transformer
+#在这里选取模型的类型:transformer/lstm/mlp，下面是对应模型的结构参数
 transformer_config:
   max_length: 5
   heads: 4
