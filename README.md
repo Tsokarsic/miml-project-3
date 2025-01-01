@@ -14,7 +14,7 @@ utils.py：一些所用到的其他函数的编写
 train_grokk.py:项目的主函数，包括数据集的构建，模型和数据的导入和调用，完整的训练过程和结果的可视化（使用wandb)  
 3.项目所需要安装的软件包  
 项目环境和工具包的要求在requirements.txt中已经列出.  
-其中wandb包的安装和使用详见https://wandb.ai/home,需要先注册账号并在本项目的终端下登录，如不需使用wandb可视化结果，
+其中wandb包的安装和使用详见https://wandb.ai/home, 需要先注册账号并在本项目的终端下登录，如不需使用wandb可视化结果，
 将config/train_grokk.yaml中的use_wandb改为false，并注释掉train_grokk中最开始的import wandb即可。
 
 
