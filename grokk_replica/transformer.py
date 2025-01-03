@@ -29,7 +29,7 @@ class mlpblock(nn.Module):
             x=self.layernorm(x)
         # x = torch.where(x > 1, x ** 2, F.relu(x))
         # x=self.leakyrelu(x)
-        x=F.relu(x)**3
+        x=F.relu(x)
         return x
 
 class mlpnetwork(nn.Module):
