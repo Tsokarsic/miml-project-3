@@ -31,7 +31,7 @@ gitdb==4.0.9
 GitPython==3.1.24
 huggingface-hub==0.26.2
 humanfriendly==10.0
-hydra-core==1.1.1
+hydra-core==1.4.0.dev1
 idna==3.3
 importlib_metadata==8.5.0
 importlib_resources==6.4.5
@@ -57,7 +57,7 @@ nbformat==5.10.4
 networkx==3.1
 numpy==1.24.2
 olefile==0.47
-omegaconf==2.1.1
+omegaconf==2.4.0.dev3
 onnxruntime==1.16.0
 opencv-python-headless==4.8.0.76
 packaging==23.1
@@ -114,3 +114,4 @@ yarg==0.1.9
 yarl==1.15.2
 yaspin==2.1.0
 zipp==3.20.2
+
