@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 from collections import defaultdict
 import math
-
+#1
 def causal_attn_mask(seq_len, device=torch.device('cpu')):
     # seq_len = length of sequence
     # returns: (seq_len, seq_len)
